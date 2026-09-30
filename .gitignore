@@ -1,0 +1,34 @@
+# Local project documentation
+/metadocs/
+
+# Visual Studio local workspace
+.vs/
+
+# Python environment and caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Private configuration
+.env
+.env.*
+!.env.example
+
+# Collected and processed data
+/data/raw/
+/data/processed/
+
+# Local DuckDB databases
+*.duckdb
+*.duckdb.wal
+
+# Logs
+*.log
+
+# Build and packaging
+build/
+dist/
+*.egg-info/

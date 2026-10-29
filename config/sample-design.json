@@ -1,0 +1,6 @@
+{
+  "design_version": 1,
+  "genres": ["shooter", "simulation-tycoon", "deathrun-platformer"],
+  "frame_size": 100,
+  "ranks": [1, 10, 25, 50, 75, 100]
+}

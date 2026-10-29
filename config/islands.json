@@ -1,0 +1,204 @@
+{
+  "sample_version": 1,
+  "created_at_utc": "2026-10-29T01:12:12.586050+00:00",
+  "snapshot_utc": "2026-10-29T01:00:00.000Z",
+  "design": {
+    "design_version": 1,
+    "genres": [
+      "shooter",
+      "simulation-tycoon",
+      "deathrun-platformer"
+    ],
+    "frame_size": 100,
+    "ranks": [
+      1,
+      10,
+      25,
+      50,
+      75,
+      100
+    ]
+  },
+  "frames": [
+    {
+      "genre": "shooter",
+      "total_ranked": 134877,
+      "returned": 100
+    },
+    {
+      "genre": "simulation-tycoon",
+      "total_ranked": 7050,
+      "returned": 100
+    },
+    {
+      "genre": "deathrun-platformer",
+      "total_ranked": 18066,
+      "returned": 100
+    }
+  ],
+  "source_directory": "data/raw/sample_20261029T011210948232Z_d82c7185",
+  "islands": [
+    {
+      "island_code": "6155-1398-4059",
+      "memberships": [
+        {
+          "genre": "shooter",
+          "selection_rank": 1
+        }
+      ]
+    },
+    {
+      "island_code": "6366-6217-9042",
+      "memberships": [
+        {
+          "genre": "shooter",
+          "selection_rank": 10
+        }
+      ]
+    },
+    {
+      "island_code": "1650-4346-6758",
+      "memberships": [
+        {
+          "genre": "shooter",
+          "selection_rank": 25
+        }
+      ]
+    },
+    {
+      "island_code": "2579-4043-9607",
+      "memberships": [
+        {
+          "genre": "shooter",
+          "selection_rank": 50
+        }
+      ]
+    },
+    {
+      "island_code": "3256-2350-0756",
+      "memberships": [
+        {
+          "genre": "shooter",
+          "selection_rank": 75
+        }
+      ]
+    },
+    {
+      "island_code": "3805-9875-3308",
+      "memberships": [
+        {
+          "genre": "shooter",
+          "selection_rank": 100
+        }
+      ]
+    },
+    {
+      "island_code": "3225-0366-8885",
+      "memberships": [
+        {
+          "genre": "simulation-tycoon",
+          "selection_rank": 1
+        }
+      ]
+    },
+    {
+      "island_code": "8123-1975-0992",
+      "memberships": [
+        {
+          "genre": "simulation-tycoon",
+          "selection_rank": 10
+        }
+      ]
+    },
+    {
+      "island_code": "3501-7237-8602",
+      "memberships": [
+        {
+          "genre": "simulation-tycoon",
+          "selection_rank": 25
+        }
+      ]
+    },
+    {
+      "island_code": "4032-4883-0195",
+      "memberships": [
+        {
+          "genre": "simulation-tycoon",
+          "selection_rank": 50
+        }
+      ]
+    },
+    {
+      "island_code": "7551-1016-0176",
+      "memberships": [
+        {
+          "genre": "simulation-tycoon",
+          "selection_rank": 75
+        }
+      ]
+    },
+    {
+      "island_code": "7513-3482-7052",
+      "memberships": [
+        {
+          "genre": "simulation-tycoon",
+          "selection_rank": 100
+        }
+      ]
+    },
+    {
+      "island_code": "4366-9611-6988",
+      "memberships": [
+        {
+          "genre": "deathrun-platformer",
+          "selection_rank": 1
+        }
+      ]
+    },
+    {
+      "island_code": "3992-9922-9691",
+      "memberships": [
+        {
+          "genre": "deathrun-platformer",
+          "selection_rank": 10
+        }
+      ]
+    },
+    {
+      "island_code": "1484-4328-4605",
+      "memberships": [
+        {
+          "genre": "deathrun-platformer",
+          "selection_rank": 25
+        }
+      ]
+    },
+    {
+      "island_code": "8112-4293-6684",
+      "memberships": [
+        {
+          "genre": "deathrun-platformer",
+          "selection_rank": 50
+        }
+      ]
+    },
+    {
+      "island_code": "5163-2101-3293",
+      "memberships": [
+        {
+          "genre": "deathrun-platformer",
+          "selection_rank": 75
+        }
+      ]
+    },
+    {
+      "island_code": "8123-3522-7412",
+      "memberships": [
+        {
+          "genre": "deathrun-platformer",
+          "selection_rank": 100
+        }
+      ]
+    }
+  ]
+}

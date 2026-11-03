@@ -2,10 +2,10 @@
 
 A Fortnite island engagement observatory using aggregated data from the
 [official Fortnite Data API](https://api.fortnite.com/ecosystem/v1/docs/).
-The collector retrieves daily metrics for one island and archives the original
-JSON response with collection metadata. A fixed pilot sample and metric
-definitions are available. Batch collection, SQL modeling, and a dashboard
-are planned for later stages.
+Collectors retrieve daily metrics for one island or a fixed pilot sample,
+archive the original JSON content, and report batch validation and coverage.
+Metric definitions and sampling criteria are documented. SQL modeling and
+a dashboard are planned for later stages.
 
 ## Environment
 
@@ -49,8 +49,9 @@ of revised values will be defined during the analytical stage.
 
 The official documentation specifies a rolling seven-day history and coverage
 limited to public, discoverable islands. Intervals with fewer than five unique
-players may return null. Ongoing days must be treated as partial; the collector
-preserves timestamps but does not yet classify period completeness.
+players may return null. Ongoing days must be treated as partial. The single-island
+collector preserves timestamps; the batch collector restricts requests to
+closed UTC days and checks returned daily timestamps against the requested range.
 
 Unique players across different days or islands cannot be summed to obtain
 unique audience counts for the period. Average minutes per player do not
@@ -88,5 +89,27 @@ uv run ruff check scripts tests
 uv run ruff format --check scripts tests
 ```
 
-Selection tests use simulated HTTP responses and do not call the live API.
-They do not yet cover the metric collector or analytical loading.
+Selection, batch, and validation tests use simulated HTTP responses and do not
+call the live API. Analytical loading and the original single-island CLI are
+not covered by these tests.
+
+## Batch collection
+
+```powershell
+uv run python scripts/collect_sample.py
+```
+
+This reads `config/islands.json` and requests the previous six complete UTC days
+for every distinct island. Six days avoid starting outside a rolling seven-day
+history at midnight. Explicit periods are also supported:
+
+```powershell
+uv run python scripts/collect_sample.py --from-date 2026-10-28 --to-date 2026-11-03
+```
+
+Replace these historical example dates when running later. Each run creates a
+unique `data/raw/batch_.../` directory with the sample copy, island responses,
+and `report.json`. The report records per-metric coverage, nulls, missing data,
+validation errors, and request failures. See [collection.md](docs/collection.md)
+for status definitions and recovery. There is no background schedule or automatic
+retry; HTTP 429 stops further requests in that run.

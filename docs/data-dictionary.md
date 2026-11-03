@@ -1,6 +1,6 @@
 # Data dictionary and analytical rules
 
-Contract reviewed on 2026-10-28 (America/Sao_Paulo): official
+Contract reviewed on 2026-10-28 and rechecked on 2026-11-03 (America/Sao_Paulo): official
 [OpenAPI specification](https://api.fortnite.com/ecosystem/v1/docs/openapi.yaml),
 API version 1.1.0. The API's retention descriptions do not establish a sufficient
 population/denominator definition for cohort analysis.
@@ -67,11 +67,17 @@ must display the number of observed days and their coverage policy.
   Store its source path and collection timestamp. Do not sum snapshots.
 - Missing data for an island is not permission to replace it in the fixed sample.
 
-## Planned quality checks
+## Implemented batch checks and remaining analytical rules
 
-Validate expected arrays, numeric-or-null values, UTC timestamps, duplicate
-timestamps within a response, requested period bounds, nonnegative count/time
-values, and unique analytical keys. Unknown fields are preserved for review.
-Compare derived and published averages as a diagnostic, not an exact equality.
-These checks and SQL transformations are specifications, not features already
-implemented in `collect_island.py`.
+`metric_validation.py`, used by `collect_sample.py`, checks expected arrays,
+numeric-or-null values, explicit UTC midnight timestamps, duplicates within each
+metric, requested period bounds, finite nonnegative numeric values, missing
+fields, and missing days. Retention is checked for numeric/null values and
+nonnegativity without enforcing a percentage/fraction upper bound. Unknown
+metric fields are preserved and listed for review. The original single-island
+collector remains unchanged and does not run these checks.
+
+Unique analytical keys across snapshots and comparisons of derived versus
+published averages are still planned for the SQL stage. The batch report does
+not deduplicate repeated runs or declare source values final. See
+[collection.md](collection.md) for coverage and status semantics.

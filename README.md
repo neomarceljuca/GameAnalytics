@@ -1,159 +1,141 @@
 # Game Analytics
 
-A Fortnite island engagement observatory using aggregated data from the
-[official Fortnite Data API](https://api.fortnite.com/ecosystem/v1/docs/).
-Collectors retrieve daily metrics for one island or a fixed pilot sample,
-archive the original JSON content, and report batch validation and coverage.
-Metric definitions, sampling criteria, and a local DuckDB warehouse with revision
-history are available. A reproducible descriptive report and static figures
-explore the pilot sample. A dashboard is planned for a later stage.
+A reproducible Python and SQL pipeline for analyzing engagement across Fortnite
+islands using the [official Fortnite Data API](https://api.fortnite.com/ecosystem/v1/docs/).
+It combines data collection, quality validation, a local DuckDB warehouse,
+coverage monitoring, and descriptive reports with static visualizations.
 
-## Manual update
+## Analytical questions
+
+- Which sampled islands reach more players?
+- Which show deeper engagement through minutes and plays per player?
+- How do reach and engagement evolve across islands and genres over time?
+
+The pilot follows **18 islands across three genres**: Shooter, Simulation & Tycoon,
+and Deathrun & Platformer. Membership is fixed using documented ranking positions;
+this is a purposive sample, not a representative survey of Fortnite.
+
+## Data pipeline
+
+```text
+Fortnite Data API -> archived JSON -> validation -> DuckDB -> SQL analysis -> reports
+                                                  |
+                                         coverage and provenance
+```
+
+- **Collection:** individual or batch requests, UTC periods, preserved responses,
+  timeouts, and explicit HTTP/network failure reporting.
+- **Warehouse:** source hashes and lineage, transactional loading, revision history,
+  and idempotent ingestion of identical source content.
+- **Metrics:** latest valid observations per island/day/metric, including explicit
+  null revisions, with SQL measures for reach and engagement.
+- **Quality:** missing values and periods remain distinct from zero; coverage
+  reports expose gaps, source age, and consecutive complete days.
+- **Operation:** one manual command coordinates the stages, records partial
+  failures, and supports archived-batch recovery without another API request.
+
+**Stack:** Python 3.14+, uv, HTTPX, DuckDB/SQL, Pandas, and Matplotlib.
+Tests use pytest; linting and formatting use Ruff. Matplotlib is an optional
+analysis dependency, separate from collection and warehouse requirements.
+
+## Published pilot
+
+The [initial report](reports/pilot/analysis.md) covers **October 28-November 2,
+2026, UTC**: 18 islands, 108 island-days, and 972 numeric metric observations.
+It compares daily reach, engagement depth, and genre trajectories with explicit
+coverage and selection limitations.
+
+![Reach and engagement across sampled islands](reports/pilot/figures/engagement.png)
+
+The islands with the highest median reach and highest median minutes per player
+were different. These are descriptive findings for the selected window, not
+causal conclusions or estimates of ecosystem-wide behavior.
+
+## Quick start
+
+Requirements: **Python 3.14+** and [uv](https://docs.astral.sh/uv/).
+From the repository root:
 
 ```powershell
+uv sync --group analysis --locked
 uv run --group analysis --locked python scripts/update_pipeline.py
 ```
 
-This runs collection, loading, accumulated coverage checks, and analysis. Inspect
-`data/processed/latest_update.md` for the latest attempt's status and links to
-its coverage report and newly generated analysis. Each run preserves separate
-diagnostics. See [updates.md](docs/updates.md) for date boundaries, freshness
-definitions, partial failures, exit codes, and archived-batch recovery.
+The update collects the previous six complete UTC days, loads new snapshots,
+checks accumulated coverage, and generates an analysis from the warehouse.
+The command makes live API requests. Raw data and the database are local and
+excluded from Git; running today creates a new observation window rather than
+reconstructing the published historical snapshot.
 
-## Environment
+Inspect **`data/processed/latest_update.md`** for stage statuses and links to the
+latest coverage report and analysis. Every update keeps its own diagnostics
+under `data/processed/updates/`. The published report above remains a versioned
+snapshot; operational reports are generated separately for review.
 
-Python 3.14 and [uv](https://docs.astral.sh/uv/) are required.
-From the repository root, install the dependencies:
-
-```powershell
-uv sync --locked
-```
-
-## First collection
+To reprocess an existing batch without querying the API:
 
 ```powershell
-uv run python scripts/collect_island.py --island-code 3225-0366-8885
+uv run --group analysis --locked python scripts/update_pipeline.py --batch-dir data/raw/YOUR_BATCH_DIRECTORY
 ```
 
-Without explicit dates, the script retrieves the previous UTC day. To select
-a period within the last seven days:
+Replace the example path with a saved batch. Use `--help` for date, history,
+sample, and database options. The standalone collection, loading, and analysis
+scripts remain available; see the guides below for their commands.
+
+## Repository structure
+
+```text
+config/     Fixed sample and selection design
+scripts/    Collectors, validation, warehouse loading, analysis, and updates
+sql/        Schema, analytical queries, and quality checks
+reports/    Published pilot report and figures
+tests/      Automated tests
+docs/       Methodology and operational guides
+data/       Local raw data, database, exports, and run diagnostics (ignored)
+```
+
+## Verification
 
 ```powershell
-uv run python scripts/collect_island.py --island-code 3225-0366-8885 --from-date 2026-09-29 --to-date 2026-09-30
+uv run --locked python -m pytest -q
+uv run --locked ruff check scripts tests
+uv run --locked ruff format --check scripts tests
 ```
 
-The dates above match the project's initial query; replace them with recent
-dates when reproducing the collection. The start is inclusive and the end is
-exclusive, both at midnight UTC. Use `--help` to view the available options.
+Tests use simulated HTTP responses, in-memory databases, and temporary files.
+They cover ingestion identity, null revisions, transaction rollback, metric
+formulas, sample isolation, coverage, and pipeline recovery without calling the
+live API. Published pilot summaries were also reconciled against archived JSONs.
 
-Each successful run creates a separate file in `data/raw/`, excluded from Git:
+## Interpretation limits
 
-- `collection`: UTC collection timestamp, island code, interval, URL, parameters,
-  and HTTP status.
-- `data`: the JSON content returned by the API, without transforming metrics
-  or replacing null values.
+- The API documents a rolling seven-day history and covers public, discoverable
+  islands. Small audiences can produce null values; source availability can vary.
+- Daily unique players cannot be summed across days or islands to obtain a
+  distinct audience. Minutes per player are not average session duration.
+- Published retention definitions and denominators remain unresolved for cohort
+  analysis; retention does not drive the primary findings.
+- Genre groups can overlap. Ranking-based selection and retrospective periods
+  introduce bias, and six days do not establish sustained growth or seasonality.
+- The source does not provide individual player journeys, revenue, or acquisition
+  costs; individual churn, LTV, and ROAS are outside this project's scope.
 
-The script uses a 30-second timeout, reports connection or HTTP errors, and
-exits with a nonzero code on failure. It does not retry automatically.
-Repeated collections preserve separate snapshots; deduplication and handling
-of revised values will be defined during the analytical stage.
+## Documentation
 
-## Limitations
+| Topic | Guide |
+|---|---|
+| Questions and metric definitions | [Project brief](docs/project-brief.md), [data dictionary](docs/data-dictionary.md) |
+| Sample design and selection bias | [Sampling protocol](docs/sampling.md) |
+| Collection, updates, and recovery | [Batch collection](docs/collection.md), [manual updates](docs/updates.md) |
+| Model, revision policy, and SQL | [DuckDB warehouse](docs/warehouse.md) |
+| Comparisons, eligibility, and outputs | [Descriptive analysis](docs/analysis.md) |
 
-The official documentation specifies a rolling seven-day history and coverage
-limited to public, discoverable islands. Intervals with fewer than five unique
-players may return null. Ongoing days must be treated as partial. The single-island
-collector preserves timestamps; the batch collector restricts requests to
-closed UTC days and checks returned daily timestamps against the requested range.
+## Next milestones
 
-Unique players across different days or islands cannot be summed to obtain
-unique audience counts for the period. Average minutes per player do not
-represent average session duration. The definition and denominator of published
-retention need to be confirmed before cohort analysis. The source does not
-provide revenue or individual player events.
+Extend the fixed sample's archived history toward the proposed 28-day window,
+prepare dashboard-ready tables, and build a Power BI dashboard. Collection is
+currently triggered manually.
 
-## Analytical design and pilot sample
+## License
 
-- [Project brief](docs/project-brief.md): primary questions, scope, and completion criteria.
-- [Data dictionary](docs/data-dictionary.md): field definitions, formulas, and planned quality rules.
-- [Sampling protocol](docs/sampling.md): selection criteria, reproducibility, and biases.
-- [Frozen sample](config/islands.json): 18 distinct islands from three genres,
-  selected at the common ranking snapshot `2026-10-29T01:00:00.000Z`
-  (2026-10-28 at 22:00 in America/Sao_Paulo).
-
-The sample builder archives the genre catalog and top-100 ranking frames before
-writing a manifest. The initial manifest already exists; the command below
-illustrates creating a separate proposed sample without overwriting it:
-
-```powershell
-uv run python scripts/build_sample.py --output data/raw/proposed-sample.json
-```
-
-This requests a new snapshot and does not reproduce the original membership
-after the rankings change. Continue using `config/islands.json` for the fixed
-pilot. The sample is rank-based and purposive; it does not represent all islands
-or verified audience strata. Raw selection evidence stays outside Git.
-
-## Checks
-
-```powershell
-uv run python -m pytest -q
-uv run ruff check scripts tests
-uv run ruff format --check scripts tests
-```
-
-Selection, batch, and validation tests use simulated HTTP responses. Warehouse
-tests use in-memory DuckDB databases and known-answer fixtures. None call the
-live API. The original single-island CLI is not covered by these tests.
-
-## Batch collection
-
-```powershell
-uv run python scripts/collect_sample.py
-```
-
-This reads `config/islands.json` and requests the previous six complete UTC days
-for every distinct island. Six days avoid starting outside a rolling seven-day
-history at midnight. Explicit periods are also supported:
-
-```powershell
-uv run python scripts/collect_sample.py --from-date 2026-10-28 --to-date 2026-11-03
-```
-
-Replace these historical example dates when running later. Each run creates a
-unique `data/raw/batch_.../` directory with the sample copy, island responses,
-and `report.json`. The report records per-metric coverage, nulls, missing data,
-validation errors, and request failures. See [collection.md](docs/collection.md)
-for status definitions and recovery. There is no background schedule or automatic
-retry; HTTP 429 stops further requests in that run.
-
-## DuckDB loading and SQL
-
-```powershell
-uv run python scripts/load_duckdb.py --input-dir data/raw/batch_20261103T184133503747Z_39e9d62a
-```
-
-Use an existing batch directory from your local collection. The database is
-created at `data/processed/gameanalytics.duckdb`. Repeating a load skips identical
-source content. Historical revisions are retained; the current metric view picks
-the latest collected observation per island, day, and metric, including nulls.
-
-See [warehouse.md](docs/warehouse.md) for table grains, revision rules,
-transaction behavior, query commands, and limitations. The initial analytical
-query is [daily_engagement.sql](sql/daily_engagement.sql); warehouse checks run
-automatically on every load. No source data or database is committed.
-
-## Descriptive analysis
-
-```powershell
-uv run --group analysis --locked python scripts/analyze_sample.py
-```
-
-The optional analysis group includes Matplotlib. The script reads the database
-without modifying it, restricts comparisons to the fixed sample, and generates
-the [pilot report](reports/pilot/analysis.md) and three figures. Local data and
-provenance exports are written to `data/processed/analysis/`.
-
-See [analysis.md](docs/analysis.md) for eligibility rules, genre overlap,
-window selection, output paths, and interpretation limits. Comparisons describe
-the selected islands; they do not estimate Fortnite-wide behavior or causal effects.
+The project code is available under the [MIT License](LICENSE).

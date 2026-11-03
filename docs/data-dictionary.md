@@ -9,9 +9,9 @@ population/denominator definition for cohort analysis.
 
 The daily metric endpoint is `GET /islands/{code}/metrics/day`. `from` is
 inclusive, `to` exclusive; dates are sent at midnight UTC. A timestamp identifies
-the metric bucket, not the time of collection. The analytical key will be
-`(island_code, interval, timestamp, metric_name)`. Retention will be expanded into
-`retention.d1` and `retention.d7` when analytical loading is implemented.
+the metric bucket, not the time of collection. The analytical key is
+`(island_code, interval, bucket_start, metric_name)`. The warehouse maps timestamp
+to bucket_start and expands retention into `retention.d1` and `retention.d7`.
 
 The existing collector archives `collection` (collection timestamp, island,
 interval, URL, parameters, HTTP status) and `data` (original JSON content).
@@ -37,13 +37,13 @@ retention values observed as fractions are not proof of a stable unit contract.
 Keep them as published values pending clarification, rather than enforcing a
 percentage or fraction range.
 
-## Derived measures to implement in SQL
+## Derived measures
 
 | Measure | Formula | Eligibility |
 |---|---|---|
 | Plays per player | `plays / uniquePlayers` | Same island and UTC bucket; both available; denominator > 0 |
-| Favorites per 1,000 players | `1000 * favorites / uniquePlayers` | Same bucket; denominator > 0; support status known, otherwise exploratory only |
-| Recommendations per 1,000 players | `1000 * recommendations / uniquePlayers` | Same support and denominator requirements |
+| Favorites per 1,000 players (deferred) | `1000 * favorites / uniquePlayers` | Same bucket; denominator > 0; support status known, otherwise exploratory only |
+| Recommendations per 1,000 players (deferred) | `1000 * recommendations / uniquePlayers` | Same support and denominator requirements |
 | Daily reach change | `100 * (players_today / players_yesterday - 1)` | Consecutive complete daily buckets, both available, previous value > 0 |
 | Implied minutes per player | `minutesPlayed / uniquePlayers` | Diagnostic against the published average; allow rounding differences, never silently replace it |
 
@@ -62,7 +62,7 @@ must display the number of observed days and their coverage policy.
   Never fill any of them with zero automatically.
 - A bucket is time-complete when its end is <= collection time in UTC. A closed
   period may still be revised; complete does not mean final.
-- Preserve all raw snapshots. The planned analytical policy is latest successfully
+- Preserve all raw snapshots. The implemented analytical policy is latest successfully
   collected, structurally valid observation per key, including a later null.
   Store its source path and collection timestamp. Do not sum snapshots.
 - Missing data for an island is not permission to replace it in the fixed sample.
@@ -77,7 +77,10 @@ nonnegativity without enforcing a percentage/fraction upper bound. Unknown
 metric fields are preserved and listed for review. The original single-island
 collector remains unchanged and does not run these checks.
 
-Unique analytical keys across snapshots and comparisons of derived versus
-published averages are still planned for the SQL stage. The batch report does
-not deduplicate repeated runs or declare source values final. See
-[collection.md](collection.md) for coverage and status semantics.
+The DuckDB current view enforces unique analytical keys across accepted
+snapshots. The daily view calculates ratios, consecutive-day growth, and the
+diagnostic difference between implied and published average minutes. Omitted
+fields are not new observations; explicit newer null values supersede older
+numbers. See [warehouse.md](warehouse.md) for revision and tie-break rules.
+The batch report itself does not deduplicate repeated runs or declare source
+values final. See [collection.md](collection.md) for coverage and status semantics.

@@ -80,8 +80,8 @@ enforce retention cohort definitions, or deduplicate separate snapshots.
 Inspect the report before rerunning. For a rate limit, honor the source's
 waiting guidance before another manual execution. Rerunning the batch creates
 another snapshot of the same sample; it does not overwrite the previous run.
-Do not sum those snapshots as additional activity. Analytical deduplication and
-SQL reconciliation remain the next stage.
+Do not sum those snapshots as additional activity. The [DuckDB loader](warehouse.md)
+now implements analytical snapshot selection and SQL checks as a separate step.
 
 Tests simulate complete and incomplete responses, nulls, zero, malformed
 numbers and JSON, invalid timestamps, duplicate buckets, HTTP/network/write

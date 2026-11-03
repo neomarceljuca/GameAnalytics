@@ -4,8 +4,8 @@ A Fortnite island engagement observatory using aggregated data from the
 [official Fortnite Data API](https://api.fortnite.com/ecosystem/v1/docs/).
 Collectors retrieve daily metrics for one island or a fixed pilot sample,
 archive the original JSON content, and report batch validation and coverage.
-Metric definitions and sampling criteria are documented. SQL modeling and
-a dashboard are planned for later stages.
+Metric definitions, sampling criteria, and a local DuckDB warehouse with revision
+history are available. A dashboard is planned for a later stage.
 
 ## Environment
 
@@ -89,9 +89,9 @@ uv run ruff check scripts tests
 uv run ruff format --check scripts tests
 ```
 
-Selection, batch, and validation tests use simulated HTTP responses and do not
-call the live API. Analytical loading and the original single-island CLI are
-not covered by these tests.
+Selection, batch, and validation tests use simulated HTTP responses. Warehouse
+tests use in-memory DuckDB databases and known-answer fixtures. None call the
+live API. The original single-island CLI is not covered by these tests.
 
 ## Batch collection
 
@@ -113,3 +113,19 @@ and `report.json`. The report records per-metric coverage, nulls, missing data,
 validation errors, and request failures. See [collection.md](docs/collection.md)
 for status definitions and recovery. There is no background schedule or automatic
 retry; HTTP 429 stops further requests in that run.
+
+## DuckDB loading and SQL
+
+```powershell
+uv run python scripts/load_duckdb.py --input-dir data/raw/batch_20261103T184133503747Z_39e9d62a
+```
+
+Use an existing batch directory from your local collection. The database is
+created at `data/processed/gameanalytics.duckdb`. Repeating a load skips identical
+source content. Historical revisions are retained; the current metric view picks
+the latest collected observation per island, day, and metric, including nulls.
+
+See [warehouse.md](docs/warehouse.md) for table grains, revision rules,
+transaction behavior, query commands, and limitations. The initial analytical
+query is [daily_engagement.sql](sql/daily_engagement.sql); warehouse checks run
+automatically on every load. No source data or database is committed.

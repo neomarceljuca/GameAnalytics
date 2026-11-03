@@ -128,4 +128,5 @@ artifacts; the loader does not refresh exports on subsequent loads.
 SQL mechanics were checked against DuckDB 1.5.6 and its official documentation:
 [transactions](https://duckdb.org/docs/1.5/sql/statements/transactions) and
 [QUALIFY](https://duckdb.org/docs/1.5/sql/query_syntax/qualify). There is no
-scheduled collection, dashboard, or completed product analysis in this increment.
+scheduled collection or dashboard. A first [descriptive analysis](analysis.md)
+now consumes these views as a separate reproducible step.

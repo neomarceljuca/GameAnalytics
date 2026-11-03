@@ -32,8 +32,9 @@ The initial design selects six ranks from each of three genres, for up to 18
 distinct islands. Overlaps are stored once with multiple genre memberships.
 See [sampling.md](sampling.md). This is a pilot, not a representative survey.
 
-The initial collection will request the recent daily history available from the
-API, excluding the current UTC day. A target of 28 consecutive complete UTC days
+The initial collection retrieved six complete UTC days (2026-10-28 through
+2026-11-02) for the selected sample. The first descriptive report analyzes that
+window. A target of 28 consecutive complete UTC days
 is a proposed observation window, not data already acquired. Local archiving is
 necessary to extend beyond the API's rolling history. Scheduling remains a
 separate implementation step.

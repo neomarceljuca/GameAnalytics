@@ -5,7 +5,8 @@ A Fortnite island engagement observatory using aggregated data from the
 Collectors retrieve daily metrics for one island or a fixed pilot sample,
 archive the original JSON content, and report batch validation and coverage.
 Metric definitions, sampling criteria, and a local DuckDB warehouse with revision
-history are available. A dashboard is planned for a later stage.
+history are available. A reproducible descriptive report and static figures
+explore the pilot sample. A dashboard is planned for a later stage.
 
 ## Environment
 
@@ -129,3 +130,18 @@ See [warehouse.md](docs/warehouse.md) for table grains, revision rules,
 transaction behavior, query commands, and limitations. The initial analytical
 query is [daily_engagement.sql](sql/daily_engagement.sql); warehouse checks run
 automatically on every load. No source data or database is committed.
+
+## Descriptive analysis
+
+```powershell
+uv run --group analysis --locked python scripts/analyze_sample.py
+```
+
+The optional analysis group includes Matplotlib. The script reads the database
+without modifying it, restricts comparisons to the fixed sample, and generates
+the [pilot report](reports/pilot/analysis.md) and three figures. Local data and
+provenance exports are written to `data/processed/analysis/`.
+
+See [analysis.md](docs/analysis.md) for eligibility rules, genre overlap,
+window selection, output paths, and interpretation limits. Comparisons describe
+the selected islands; they do not estimate Fortnite-wide behavior or causal effects.

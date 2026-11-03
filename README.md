@@ -8,6 +8,18 @@ Metric definitions, sampling criteria, and a local DuckDB warehouse with revisio
 history are available. A reproducible descriptive report and static figures
 explore the pilot sample. A dashboard is planned for a later stage.
 
+## Manual update
+
+```powershell
+uv run --group analysis --locked python scripts/update_pipeline.py
+```
+
+This runs collection, loading, accumulated coverage checks, and analysis. Inspect
+`data/processed/latest_update.md` for the latest attempt's status and links to
+its coverage report and newly generated analysis. Each run preserves separate
+diagnostics. See [updates.md](docs/updates.md) for date boundaries, freshness
+definitions, partial failures, exit codes, and archived-batch recovery.
+
 ## Environment
 
 Python 3.14 and [uv](https://docs.astral.sh/uv/) are required.

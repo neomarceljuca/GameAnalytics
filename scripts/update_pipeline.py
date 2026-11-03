@@ -1,4 +1,4 @@
-"""Manually update collection, warehouse, coverage, and analysis in one command."""
+"""Manually update collection, warehouse, coverage, BI exports, and analysis."""
 
 import argparse
 import importlib.util
@@ -15,16 +15,18 @@ import httpx
 if __package__:
     from .collect_island import parse_date
     from .collect_sample import collect_batch, load_sample, save_json
+    from .export_bi import export_bi
     from .load_duckdb import initialize, load_batch
     from .pipeline_coverage import build_coverage, coverage_markdown
 else:
     from collect_island import parse_date
     from collect_sample import collect_batch, load_sample, save_json
+    from export_bi import export_bi
     from load_duckdb import initialize, load_batch
     from pipeline_coverage import build_coverage, coverage_markdown
 
 ROOT = Path(__file__).resolve().parents[1]
-STEPS = ("collection", "warehouse", "coverage", "analysis")
+STEPS = ("collection", "warehouse", "coverage", "bi_export", "analysis")
 
 
 def history_boundary(latest_dir, digest, database, explicit):
@@ -61,6 +63,7 @@ def summary_markdown(summary):
         ("Batch directory", "batch_dir"),
         ("Coverage report", "coverage_report"),
         ("Generated analysis", "analysis_report"),
+        ("BI export package", "bi_export_dir"),
     ]:
         if summary.get(key):
             lines.append(f"- [{label}](<{summary[key]}>)")
@@ -288,6 +291,19 @@ def run_update(
         summary["analysis_report"] = path.resolve().as_posix()
         return result
 
+    def bi_export_step():
+        result = export_bi(
+            database,
+            sample_path,
+            datetime.fromisoformat(coverage["from_date"]).date(),
+            now.date(),
+            latest_dir / "bi",
+            run_dir / "summary.json",
+        )
+        summary["bi_export_dir"] = result["directory"]
+        summary["bi_latest_pointer"] = result["latest_pointer"]
+        return result
+
     try:
         execute_step(summary, "collection", collection, run_dir, latest_dir)
         if summary["steps"]["collection"]["status"] != "failed":
@@ -302,6 +318,13 @@ def run_update(
             summary["steps"][s]["status"] in ("completed", "warning")
             for s in ("collection", "warehouse", "coverage")
         )
+        if ready and coverage:
+            execute_step(summary, "bi_export", bi_export_step, run_dir, latest_dir)
+        else:
+            summary["steps"]["bi_export"] = {
+                "status": "skipped",
+                "message": "Collection, loading or coverage prerequisites failed.",
+            }
         if ready and coverage and coverage["numeric"]:
             execute_step(summary, "analysis", analysis, run_dir, latest_dir)
         else:

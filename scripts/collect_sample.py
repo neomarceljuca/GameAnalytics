@@ -49,7 +49,15 @@ def save_json(path: Path, document: dict) -> None:
         with temporary.open("x", encoding="utf-8") as stream:
             json.dump(document, stream, ensure_ascii=False, indent=2, allow_nan=False)
             stream.write("\n")
-        temporary.replace(path)
+        for attempt in range(4):
+            try:
+                temporary.replace(path)
+                break
+            except PermissionError:
+                if attempt == 3:
+                    raise
+                # Windows readers/scanners may briefly hold the destination open.
+                time.sleep(0.05 * (attempt + 1))
     finally:
         temporary.unlink(missing_ok=True)
 

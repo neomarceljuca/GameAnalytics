@@ -3,12 +3,50 @@
 import copy
 import json
 from datetime import date
+from pathlib import Path
 
 import httpx
 import pytest
 
 from scripts import collect_sample as batch
 from scripts.metric_validation import SCALAR_METRICS, validate_metrics
+
+
+def test_atomic_writer_retries_transient_destination_lock(tmp_path, monkeypatch):
+    original = Path.replace
+    calls = []
+
+    def replace(path, target):
+        calls.append(path)
+        if len(calls) == 1:
+            raise PermissionError("simulated transient Windows lock")
+        return original(path, target)
+
+    monkeypatch.setattr(Path, "replace", replace)
+    monkeypatch.setattr(batch.time, "sleep", lambda seconds: None)
+    destination = tmp_path / "report.json"
+    batch.save_json(destination, {"status": "ok"})
+    assert json.loads(destination.read_text()) == {"status": "ok"}
+    assert len(calls) == 2
+
+
+def test_atomic_writer_keeps_previous_file_on_persistent_lock(tmp_path, monkeypatch):
+    destination = tmp_path / "report.json"
+    destination.write_text("previous")
+    calls = []
+
+    def replace(path, target):
+        calls.append(path)
+        raise PermissionError("simulated persistent lock")
+
+    monkeypatch.setattr(Path, "replace", replace)
+    monkeypatch.setattr(batch.time, "sleep", lambda seconds: None)
+    with pytest.raises(PermissionError, match="persistent"):
+        batch.save_json(destination, {"status": "new"})
+    assert len(calls) == 4
+    assert destination.read_text() == "previous"
+    assert not list(tmp_path.glob("*.tmp"))
+
 
 START = date(2026, 11, 1)
 END = date(2026, 11, 3)

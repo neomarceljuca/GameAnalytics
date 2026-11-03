@@ -1,0 +1,89 @@
+// Templates: add one measure at a time in Power BI Desktop.
+// Requires the single-direction relationships documented in docs/power-bi.md.
+// Review and validate in Desktop before publishing; these have not been executed there.
+
+Sampled Islands =
+VAR Codes = VALUES(bridge_island_genre[island_code])
+RETURN CALCULATE(
+    DISTINCTCOUNT(dim_island[island_code]),
+    KEEPFILTERS(TREATAS(Codes, dim_island[island_code]))
+)
+
+Observed Player Minutes =
+VAR Codes = VALUES(bridge_island_genre[island_code])
+RETURN CALCULATE(
+    SUM(fact_island_daily[minutes_played]),
+    KEEPFILTERS(TREATAS(Codes, dim_island[island_code]))
+)
+
+Numeric Metric Coverage % =
+VAR Codes = VALUES(bridge_island_genre[island_code])
+RETURN CALCULATE(
+    DIVIDE(
+        CALCULATE(COUNTROWS(fact_metric_coverage), fact_metric_coverage[state] = "numeric"),
+        CALCULATE(COUNTROWS(fact_metric_coverage), REMOVEFILTERS(fact_metric_coverage[state]))
+    ),
+    KEEPFILTERS(TREATAS(Codes, dim_island[island_code]))
+)
+
+Present Metric Coverage % =
+VAR Codes = VALUES(bridge_island_genre[island_code])
+RETURN CALCULATE(
+    DIVIDE(
+        CALCULATE(COUNTROWS(fact_metric_coverage), fact_metric_coverage[state] <> "absent"),
+        CALCULATE(COUNTROWS(fact_metric_coverage), REMOVEFILTERS(fact_metric_coverage[state]))
+    ),
+    KEEPFILTERS(TREATAS(Codes, dim_island[island_code]))
+)
+
+// Hide these three per-island helpers from report consumers.
+Reach Median per Island =
+VAR RequiredDays = COUNTROWS(VALUES(dim_date[date_key]))
+RETURN IF(
+    HASONEVALUE(dim_island[island_code]) && RequiredDays > 0 &&
+    COUNT(fact_island_daily[unique_players]) = RequiredDays,
+    MEDIAN(fact_island_daily[unique_players])
+)
+
+Minutes Median per Island =
+VAR RequiredDays = COUNTROWS(VALUES(dim_date[date_key]))
+RETURN IF(
+    HASONEVALUE(dim_island[island_code]) && RequiredDays > 0 &&
+    COUNT(fact_island_daily[average_minutes_per_player]) = RequiredDays,
+    MEDIAN(fact_island_daily[average_minutes_per_player])
+)
+
+Plays Median per Island =
+VAR RequiredDays = COUNTROWS(VALUES(dim_date[date_key]))
+RETURN IF(
+    HASONEVALUE(dim_island[island_code]) && RequiredDays > 0 &&
+    COUNT(fact_island_daily[plays_per_player]) = RequiredDays,
+    MEDIAN(fact_island_daily[plays_per_player])
+)
+
+Median Daily Players =
+VAR Candidates = ADDCOLUMNS(
+    VALUES(bridge_island_genre[island_code]), "@Result",
+    VAR Code = bridge_island_genre[island_code]
+    RETURN CALCULATE([Reach Median per Island],
+        KEEPFILTERS(TREATAS({Code}, dim_island[island_code])))
+)
+RETURN MEDIANX(FILTER(Candidates, NOT ISBLANK([@Result])), [@Result])
+
+Median Daily Minutes per Player =
+VAR Candidates = ADDCOLUMNS(
+    VALUES(bridge_island_genre[island_code]), "@Result",
+    VAR Code = bridge_island_genre[island_code]
+    RETURN CALCULATE([Minutes Median per Island],
+        KEEPFILTERS(TREATAS({Code}, dim_island[island_code])))
+)
+RETURN MEDIANX(FILTER(Candidates, NOT ISBLANK([@Result])), [@Result])
+
+Median Daily Plays per Player =
+VAR Candidates = ADDCOLUMNS(
+    VALUES(bridge_island_genre[island_code]), "@Result",
+    VAR Code = bridge_island_genre[island_code]
+    RETURN CALCULATE([Plays Median per Island],
+        KEEPFILTERS(TREATAS({Code}, dim_island[island_code])))
+)
+RETURN MEDIANX(FILTER(Candidates, NOT ISBLANK([@Result])), [@Result])

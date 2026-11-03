@@ -3,7 +3,7 @@
 A reproducible Python and SQL pipeline for analyzing engagement across Fortnite
 islands using the [official Fortnite Data API](https://api.fortnite.com/ecosystem/v1/docs/).
 It combines data collection, quality validation, a local DuckDB warehouse,
-coverage monitoring, and descriptive reports with static visualizations.
+coverage monitoring, descriptive reports, and validated Power BI data exports.
 
 ## Analytical questions
 
@@ -18,7 +18,7 @@ this is a purposive sample, not a representative survey of Fortnite.
 ## Data pipeline
 
 ```text
-Fortnite Data API -> archived JSON -> validation -> DuckDB -> SQL analysis -> reports
+Fortnite Data API -> archived JSON -> validation -> DuckDB -> SQL -> reports / BI tables
                                                   |
                                          coverage and provenance
 ```
@@ -62,7 +62,7 @@ uv run --group analysis --locked python scripts/update_pipeline.py
 ```
 
 The update collects the previous six complete UTC days, loads new snapshots,
-checks accumulated coverage, and generates an analysis from the warehouse.
+checks accumulated coverage, exports BI tables, and generates an analysis.
 The command makes live API requests. Raw data and the database are local and
 excluded from Git; running today creates a new observation window rather than
 reconstructing the published historical snapshot.
@@ -89,6 +89,7 @@ config/     Fixed sample and selection design
 scripts/    Collectors, validation, warehouse loading, analysis, and updates
 sql/        Schema, analytical queries, and quality checks
 reports/    Published pilot report and figures
+powerbi/    Power Query import and DAX measure templates
 tests/      Automated tests
 docs/       Methodology and operational guides
 data/       Local raw data, database, exports, and run diagnostics (ignored)
@@ -129,12 +130,25 @@ live API. Published pilot summaries were also reconciled against archived JSONs.
 | Collection, updates, and recovery | [Batch collection](docs/collection.md), [manual updates](docs/updates.md) |
 | Model, revision policy, and SQL | [DuckDB warehouse](docs/warehouse.md) |
 | Comparisons, eligibility, and outputs | [Descriptive analysis](docs/analysis.md) |
+| BI tables, import queries, and relationships | [Power BI data package](docs/power-bi.md) |
+
+## Power BI data exports
+
+The manual update includes BI export. To export an existing warehouse separately:
+
+```powershell
+uv run --locked python scripts/export_bi.py
+```
+
+The latest complete package is resolved through `data/processed/bi/latest.json`.
+Import instructions and measure templates are in the BI guide above; a `.pbix`
+dashboard has not yet been created.
 
 ## Next milestones
 
 Extend the fixed sample's archived history toward the proposed 28-day window,
-prepare dashboard-ready tables, and build a Power BI dashboard. Collection is
-currently triggered manually.
+validate the supplied import/measure templates in Power BI Desktop, and build
+the dashboard. Collection is currently triggered manually.
 
 ## License
 

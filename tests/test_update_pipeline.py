@@ -15,7 +15,17 @@ from scripts.pipeline_coverage import build_coverage
 NOW = datetime(2026, 11, 3, 12, tzinfo=UTC)
 START, END = date(2026, 11, 1), date(2026, 11, 3)
 CODES = ["1111-1111-1111", "2222-2222-2222"]
-SAMPLE = {"sample_version": 1, "islands": [{"island_code": c} for c in CODES]}
+SAMPLE = {
+    "sample_version": 1,
+    "snapshot_utc": "2026-10-29T01:00:00Z",
+    "islands": [
+        {
+            "island_code": c,
+            "memberships": [{"genre": "shooter", "selection_rank": i + 1}],
+        }
+        for i, c in enumerate(CODES)
+    ],
+}
 
 
 def document(code, old=False):
@@ -366,3 +376,17 @@ def test_initial_coverage_keeps_requested_missing_prefix(tmp_path):
         )
     assert summary["from_date"] == "2026-11-01"
     assert summary["absent"] == 18
+
+
+def test_bi_export_failure_is_explicit_and_analysis_can_still_run(
+    tmp_path, monkeypatch
+):
+    def fail(*args):
+        raise OSError("simulated BI publication failure")
+
+    monkeypatch.setattr(pipeline, "export_bi", fail)
+    result = run(tmp_path, monkeypatch)
+    assert result["status"] == "failed"
+    assert result["steps"]["bi_export"]["status"] == "failed"
+    assert result["steps"]["analysis"]["status"] == "completed"
+    assert "bi_export_dir" not in result

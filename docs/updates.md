@@ -6,8 +6,8 @@
 uv run --group analysis --locked python scripts/update_pipeline.py
 ```
 
-This manually executes collection, warehouse loading, coverage reporting and
-descriptive analysis for the fixed sample. The optional analysis group includes
+This manually executes collection, warehouse loading, coverage reporting, BI
+export and descriptive analysis for the fixed sample. The optional analysis group includes
 Matplotlib. Add `--isolated` after `run` to use a temporary environment while
 preserving the current `.venv`.
 
@@ -45,6 +45,11 @@ Each execution has its own `data/processed/updates/<run_id>/` directory:
 | `analysis_data/` | Analytical exports and input metadata for that execution |
 | `analysis.stdout.log` / `analysis.stderr.log` | Captured analysis process output |
 
+The `bi_export` stage publishes a validated snapshot under
+`data/processed/bi/exports/` and atomically advances `bi/latest.json`. The update
+summary links the specific package it produced. See [power-bi.md](power-bi.md)
+for grains, import templates and relationship rules.
+
 Collection responses remain under a unique `data/raw/batch_<run_id>/`. The
 versioned `reports/pilot/` report is a published snapshot. Operational updates
 produce per-run local reports linked from the latest summary; review and publish
@@ -71,6 +76,11 @@ Stage statuses include `pending`, `running`, `completed`, `warning`, `failed`,
   per-source transactions may already have committed; see the warehouse log.
 - Coverage warnings allow an analysis with explicit context about missingness
   or freshness. Coverage failure blocks analysis.
+- BI export uses the same successful collection/loading/coverage prerequisites.
+  Missing observations can be exported with their states intact. A BI failure
+  marks the update failed and keeps the previous complete BI pointer; independent
+  analysis can still run with a warning context. No new BI package is advertised
+  by that failed stage.
 - An analysis failure keeps diagnostic logs and exposes no previous report as
   a new successful output. Unique output directories isolate partial artifacts.
 - Keyboard interruption is checkpointed when possible. If checkpoint storage
